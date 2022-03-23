@@ -5,7 +5,7 @@
 
   <groupId>com.cosmian</groupId>
   <artifactId>cosmian_spark_crypto_2.12</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0</version>
 
   <name>cosmian_spark_crypto</name>
   <!-- FIXME change it to the project's website -->
@@ -18,6 +18,11 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.cosmian</groupId>
+      <artifactId>cosmian_java_lib</artifactId>
+      <version>0.6.2</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_2.12</artifactId>
