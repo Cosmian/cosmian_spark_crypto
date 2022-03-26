@@ -1,9 +1,6 @@
 package com.cosmian.spark;
 
 import com.cosmian.CosmianException;
-import com.cosmian.jna.Ffi;
-import com.cosmian.jna.FfiException;
-import com.cosmian.jna.abe.EncryptedHeader;
 import com.cosmian.rest.abe.acccess_policy.Attr;
 
 import org.apache.hadoop.conf.Configuration;
@@ -22,49 +19,62 @@ import org.slf4j.LoggerFactory;
 
 public class CosmianAbeFactory implements EncryptionPropertiesFactory, DecryptionPropertiesFactory {
 
-    public CosmianAbeFactory() {
-        // System.out.println("CosmianEncryptionFactory instantiation on " +
-        // Thread.currentThread().getName());
-    }
-
     /**
-     * The handle of the encryption cache created with
-     * {@link Ffi#createEncryptionCache(com.cosmian.rest.kmip.objects.PublicKey)}
+     * The class of the implementation the KMS Client to use
      */
-    public static final String COSMIAN_ENCRYPTION_CACHE_HANDLE = "cosmian.encryption.cache.handle";
+    public static final String COSMIAN_KMS_CLIENT_CLASS = "com.cosmian.kms.client.class";
 
     /**
-     * The handle of the decryption cache created with
-     * {@link Ffi#createDecryptionCache(com.cosmian.rest.kmip.objects.PrivateKey)}
+     * URL of the KMS server passed to the KMS Client
      */
-    public static final String COSMIAN_DECRYPTION_CACHE_HANDLE = "cosmian.decryption.cache.handle";
+    public static final String COSMIAN_KMS_CLIENT_URL = "com.cosmian.kms.client.url";
 
     /**
-     * The policy attributes to use for that file for instance:
+     * ID of the KMS server instance passed to the KMS Client
+     */
+    public static final String COSMIAN_KMS_CLIENT_INSTANCE_ID = "com.cosmian.kms.client.instance.id";
+
+    /**
+     * Access token the KMS server passed to the KMS Client
+     */
+    public static final String COSMIAN_KMS_CLIENT_ACCESS_TOKEN = "com.cosmian.kms.client.access.token";
+
+    /**
+     * The policy attributes to use for encrypt the data frame for instance:
      * 
      * <pre>
      * "Department::MKG, Confidentiality::HIGH"
      * </pre>
      */
-    public static final String COSMIAN_ENCRYPTION_ATTRIBUTES = "cosmian.encryption.attributes";
-
     private static final Logger LOG = LoggerFactory.getLogger(CosmianAbeFactory.class);
+
+    /**
+     * The KMS Id of the user decryption key to use to decrypt the current data
+     * frame
+     */
+    public static final String COSMIAN_DECRYPTION_KEY_ID = "cosmian.decryption.key.id";
+
+    public static final String COSMIAN_ENCRYPTION_ATTRIBUTES = "cosmian.encryption.attributes";
+    private static final ThreadLocal<KeyManagementService> kmsService = new ThreadLocal<KeyManagementService>() {
+
+        @Override
+        protected KeyManagementService initialValue() {
+            return new KeyManagementService();
+        }
+
+    };
+
+    public CosmianAbeFactory() {
+
+        // System.out.println("CosmianEncryptionFactory instantiation on " +
+        // Thread.currentThread().getName());
+    }
 
     @Override
     public FileEncryptionProperties getFileEncryptionProperties(Configuration fileHadoopConfig, Path tempFilePath,
             WriteContext fileWriteContext) throws ParquetCryptoRuntimeException {
 
-        // System.out.println("Name: " + fileWriteContext.getClass().getName() + ",
-        // path: " + tempFilePath);
-
-        // Recover the encryption cache handle for the given public key
-        int encryptionCacheHandle = fileHadoopConfig.getInt(COSMIAN_ENCRYPTION_CACHE_HANDLE, -1);
-        if (encryptionCacheHandle == -1) {
-            LOG.debug("No Cosmian Encryption cache handle available. Ignoring encryption for {} at {}",
-                    fileWriteContext.getSchema().getName(), tempFilePath.toString());
-            return null;
-        }
-
+        // recover and parse the encryption attributes
         String[] attributeStrings = fileHadoopConfig.getStrings(COSMIAN_ENCRYPTION_ATTRIBUTES);
         if (attributeStrings == null) {
             LOG.debug("No Cosmian Encryption Policy Attributes provided. Ignoring encryption for {} at {}",
@@ -82,23 +92,16 @@ public class CosmianAbeFactory implements EncryptionPropertiesFactory, Decryptio
             }
         }
 
-        ParquetCipher cipher = ParquetCipher.AES_GCM_V1;
-        EncryptedHeader header;
-        try {
-            header = Ffi.encryptHeaderUsingCache(encryptionCacheHandle, attributes);
-        } catch (FfiException | CosmianException e) {
-            LOG.error("Header encryption failed: {}", e.getMessage());
-            throw new ParquetCryptoRuntimeException("Header encryption failed: " + e.getMessage(), e);
-        }
-
+        // generate the symmetric key and its encryption
+        Keys keys = kmsService.get().generateKeys(fileHadoopConfig, attributes);
         // The generated symmetric key is the footer key
-        byte[] footerKeyBytes = header.getSymmetricKey();
+        byte[] footerKeyBytes = keys.getClearTextKey();
         // ... and the meta_data is the actual encryption of the key
-        byte[] footerKeyMetadata = header.getEncryptedHeaderBytes();
+        byte[] footerKeyMetadata = keys.getEncryptedKey();
 
-        // System.out.println("...Encrypted with attributes: " + String.join(",",
-        // attributeStrings));
+        LOG.trace("Encrypted {} with attributes {} ", tempFilePath, String.join(",", attributeStrings));
 
+        ParquetCipher cipher = ParquetCipher.AES_GCM_V1;
         FileEncryptionProperties.Builder propertiesBuilder = FileEncryptionProperties.builder(footerKeyBytes)
                 .withFooterKeyMetadata(footerKeyMetadata)
                 .withAlgorithm(cipher);
@@ -113,9 +116,9 @@ public class CosmianAbeFactory implements EncryptionPropertiesFactory, Decryptio
         // System.out.println("Decrypting file: " + filePath);
 
         // Recover the decryption cache handle for the given public key
-        int decryptionCacheHandle = hadoopConfig.getInt(COSMIAN_DECRYPTION_CACHE_HANDLE, -1);
-        if (decryptionCacheHandle == -1) {
-            LOG.debug("No Cosmian Decryption cache handle available. Ignoring decryption");
+        String decryptionKeyId = hadoopConfig.get(COSMIAN_DECRYPTION_KEY_ID);
+        if (decryptionKeyId == null) {
+            LOG.debug("No Cosmian Decryption key provided. Ignoring decryption");
             return null;
         }
 
@@ -125,17 +128,12 @@ public class CosmianAbeFactory implements EncryptionPropertiesFactory, Decryptio
                     @Override
                     public byte[] getKey(byte[] keyMetaData)
                             throws KeyAccessDeniedException, ParquetCryptoRuntimeException {
-
                         try {
-                            return Ffi.decryptHeaderUsingCache(decryptionCacheHandle, keyMetaData).getSymmetricKey();
-                        } catch (FfiException | CosmianException e) {
-                            LOG.error("Header decryption failed on file {}: {}", filePath, e.getMessage());
-                            throw new ParquetCryptoRuntimeException("Header decryption failed: " +
-                                    e.getMessage(), e);
+                            return kmsService.get().decryptSymmetricKey(hadoopConfig, decryptionKeyId, keyMetaData);
+                        } catch (ParquetCryptoRuntimeException e) {
+                            throw new ParquetCryptoRuntimeException(filePath + ": " + e.getMessage(), e);
                         }
-
                     }
-
                 })
                 .withPlaintextFilesAllowed();
         return propertiesBuilder.build();
