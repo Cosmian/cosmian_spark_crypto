@@ -20,7 +20,7 @@ dataFrame
 The instruction above will encrypt the 2 dimensional partition `France x Marketing` with the access policy attributes `Country::France` and `Unit::Marketing`.
 
 
-## Why use policy attributes when encrypting Parquet partitions ?
+## Why use policy attributes when encrypting partitions ?
 
 1. Better security through partitioning: leaking a decryption key only gives access to the partition(s) this key can decrypt.
 
@@ -30,8 +30,16 @@ The instruction above will encrypt the 2 dimensional partition `France x Marketi
 
 4. The crypto system allows rotating policy attributes, providing forward secrecy for designated partitions.
 
-Consider the following policy axes, `Unit` and `Country` according to which data is partitioned:
-each pair (Unit, Country) constitues a data partition.
+Consider the following 2 policy axes, `Unit` and `Country` according to which data is partitioned:
+
+1. `Unit`: `Finance`, `Marketing`, `Human Res.`, `Sales`
+2. `Country`: `France`, `UK`, `Spain`, `Germany`
+
+Each pair (`Unit`, `Country`) constitues one of the 16 data partitions.
+
+- traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring securing both the encypting systems and decrypting systems.
+- end to end encryption will have a single key for each partition: providing access to various users over combination of paritions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be completely secure.
+- with attrbute based encryption, the encryption key is public - avoiding securing the encrypting systems - and each user can have its own unique key even when partitions overlap:
 
  Unit/Country  | France |   UK   |  Spain  |  Germany  |
  --------------|--------|--------|---------|-----------|
@@ -40,9 +48,6 @@ each pair (Unit, Country) constitues a data partition.
  **Human Res.**|  K₁    |        |         |           |
  **Sales**     |  K₁ K₂ |   K₂   |  K₂ K₃  |   K₂ K₃   |
 
-- traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring securing both the encypting systems and decrypting systems.
-- end to end encryption will have a single key for each partition: providing access to various users over combination of paritions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be completely secure.
-- with attrbute based encryption, the encryption key is public - avoiding securing the encrypting systems - and each user can have its own unique key even when partitions overlap:
 
 Key `K₁` can decrypt all the `France` data and has the following access policy
 ``` 
