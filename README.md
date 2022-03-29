@@ -106,7 +106,6 @@ Using instructions available on the [cosmian_java_lib](https://github.com/Cosmia
 
  - the master secret key is used to generate user decryption key with 
 
-3. Encryption
 
 
 
