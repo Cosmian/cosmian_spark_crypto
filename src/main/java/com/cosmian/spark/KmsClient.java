@@ -9,11 +9,11 @@ public interface KmsClient {
      * Pass configuration with KMS-specific parameters.
      * 
      * @param configuration  Hadoop configuration
-     * @param kmsInstanceID  ID of the KMS instance handled by this KmsClient. Use
-     *                       the default value, for KMS systems
+     * @param kmsInstanceID  ID of the KMS instance handled by this KmsClient. Not
+     *                       used for KMS systems
      *                       that don't work with multiple instances.
-     * @param kmsInstanceURL URL of the KMS instance handled by this KmsClient. Use
-     *                       the default value, for KMS systems
+     * @param kmsInstanceURL URL of the KMS instance handled by this KmsClient. Not
+     *                       used for KMS systems
      *                       that don't work with URLs.
      * @param accessToken    KMS access (authorization) token. Use the default
      *                       value, for KMS systems that don't work with tokens.
