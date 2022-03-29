@@ -24,13 +24,13 @@ The instruction above will encrypt the 2 dimensional partition `France x Marketi
 
 1. **Better security** through partitioning: leaking a decryption key only gives access to the partition(s) this key can decrypt.
 
-2. Encryption is performed using a public key, which can be safely deployed to all encrypting system, as it cannot decrypt data. **Encrypting systems do not need to be secured**.
+2. Encryption is performed using a public key, which cannot decrypt and hence can be safely deployed to all encrypting system: **Encrypting systems do not need to be secured**.
 
-3. The crypto system allows user decryption keys for **overlapping set of partitions** , allowing for sophisticated, fine grained access policies.
+3. The crypto system allows issuing user decryption keys for **overlapping set of partitions**, allowing for sophisticated, fine grained user access policies.
 
-4. User decryptions keys can be issued at any time **after** data is encrypted, for any given set of partitions, which **facilitates user key management**. 
+4. User decryptions keys can be issued at any time **after** data is encrypted, for any given set of partitions, which **facilitates user key management** and does not require exhaustively listing all possible usages prior to partitioning (a typical data science use case). 
 
-5. The crypto system allows rotating policy attributes, providing **forward secrecy for designated partitions**.
+5. The crypto system allows rotating policy attributes, providing **forward secrecy for designated partitions** without having to re-encrypt the full database.
 
 Consider the following 2 policy axes, `Unit` and `Country` according to which data is partitioned:
 
@@ -39,11 +39,11 @@ Consider the following 2 policy axes, `Unit` and `Country` according to which da
 
 Each pair (`Unit`, `Country`) constitues one of the 16 data partitions.
 
-- traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring both the encypting and decrypting systems to be secured.
+- traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring both the encrypting and decrypting systems to be secured.
 
-- end to end encryption will have a single key for each partition: providing access to various users over combination of paritions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be secured.
+- end to end encryption will have a single key for each partition: providing access to various users over combination of partitions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be secured.
 
-- with attrbute based encryption, the encryption key is public - avoiding having to secure the encrypting systems - and each user can have its own unique key even though partitions overlap:
+- with attribute based encryption, the encryption key is public - avoiding having to secure the encrypting systems - and each user can have its own unique key even though partitions overlap:
 
  Unit/Country  | France |   UK   |  Spain  |  Germany  |
  --------------|--------|--------|---------|-----------|
@@ -53,22 +53,22 @@ Each pair (`Unit`, `Country`) constitues one of the 16 data partitions.
  **Sales**     |  K₁ K₂ |   K₂   |  K₂ K₃  |   K₂ K₃   |
 
 
-Key `K₁` can decrypt all the `France` data and has the following access policy
+Key `K₁` can decrypt all the `France` data with the following access policy
 ``` 
 (Unit::Finance || Unit::Marketing || Unit::Human Res. || Unit::Sales ) && Country::France 
 ```
 
-Key `K₂` can decrypt all the `Sales` and has the following access policy
+Key `K₂` can decrypt all the `Sales` data with the following access policy
 ``` 
 Unit::Sales && (Country::France || Country::UK || Country::Spain || Country::Germany )
 ```
 
-Key `K₃` can decrypt the `Marketing` and `Sales` data from `Spain` and `Germany` and has the following access policy
+Key `K₃` can decrypt the `Marketing` and `Sales` data from `Spain` and `Germany` with the following access policy
 ``` 
 (Unit::Marketing || Unit::Sales) && (Country::Spain || Country::Germany )
 ```
 
-User key unicity is total: 2 users having access to the same set of partitions, have different keys. This adds security as usuers can be individually traced.
+User keys are truly unique: 2 users having access to the same set of partitions, have different keys. This adds security as users can be individually traced.
 
 For details on the underlying cryptographic protocol check the [abe_gpsw](https://github.com/Cosmian/abe_gpsw/) and [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repositories.
 
@@ -80,6 +80,9 @@ Millions of records can be encrypted in a matter of seconds.
 
 
 ## Using
+
+
+### Setup the Spark project
 
 1. Add the two libraries to the the `sbt` dependencies
 
@@ -94,6 +97,14 @@ Millions of records can be encrypted in a matter of seconds.
 
 2. Download the abe_gpsw library from the github repository or build it according to these [instructions](https://github.com/Cosmian/cosmian_java_lib#building-the-the-abe-gpsw-native-lib) and install it in the `src/main/resources/linux-x86-64` of your spark project.  
 
+
+### Generate the master keys
+
+Using instructions available on the [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repository, generate a master key pair for a partitioning policy.
+
+ - the master public key can only be used to encrypt data, with any set of policy attributes. It can be safely deployed to any system encrypting data.
+
+ - the master secret key is used to generate user decryption key with 
 
 3. Encryption
 
