@@ -1,3 +1,4 @@
+![workflow](https://github.com/Cosmian/cosmian_spark_crypto/actions/workflows/maven-publish.yml/badge.svg)
 
 ## Encrypting Parquet partitions with Spark and access policy attributes
 
