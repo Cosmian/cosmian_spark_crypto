@@ -108,19 +108,20 @@ Using instructions available on the [cosmian_java_lib](https://github.com/Cosmia
 
 ### Implement the KMS access
 
-To fetch the various keys to encrypt/decrypt data, Spark must communicate with your KMS.
-Implement the interface `com.cosmian.spark` in your Spark project and pass the implementated class name to the hadoop config using 
+To fetch the public and user keys to respectively encrypt and decrypt data, Spark must communicate with your KMS.
+
+Implement the interface `com.cosmian.spark` in your Spark project and pass the implementing class name to the hadoop config using 
 
 ``` java
 spark.sparkContext.hadoopConfiguration.set(
   CosmianAbeFactory.COSMIAN_KMS_CLIENT_CLASS,
-  "com.yourcompany.YourKms"
+  "com.company.YourKms"
 )
 ```
 
 Before retrieving any key using the `retrievePublicKey()` or `retrievePrivateKey(String privateKeyId)`, Spark will call the `initialize(Configuration configuration, String kmsInstanceID, String kmsInstanceURL, String accessToken)` method once per Spark thread.
 
-The parmeters passed to the `initialize` method are extracted from the parameters set on the Hadoop configuration of the Spark session.
+The parameters passed to the `initialize` method are extracted from the parameters set on the Hadoop configuration of the Spark session.
 
  - `kmsInstanceId` :
 
@@ -152,21 +153,55 @@ The parmeters passed to the `initialize` method are extracted from the parameter
       )
     ```
 
-Finally activate the Parquet modular encyption using
+Finally activate the Parquet modular encryption using
 
 
 ``` java
-    spark.sparkContext.hadoopConfiguration
-      .set(
-        "parquet.crypto.factory.class",
-        "com.cosmian.spark.CosmianAbeFactory"
-      )
+spark.sparkContext.hadoopConfiguration
+  .set(
+    "parquet.crypto.factory.class",
+    "com.cosmian.spark.CosmianAbeFactory"
+  )
 ```
 
+Note: if you plan on using Cosmian Public Confidential KMS service, please contact us for details.
+
+### Encryption
+
+Simply pass the policy attributes using an `option` and the `CosmianAbeFactory.COSMIAN_ENCRYPTION_ATTRIBUTES`.
+
+```java
+dataFrame
+    .filter((col("COUNTRY") === "FR") && (col("UNIT") !== "MKG"))
+    .write
+    .mode(SaveMode.Append)
+    .partitionBy("COUNTRY", "UNIT")
+    .option(
+        CosmianAbeFactory.COSMIAN_ENCRYPTION_ATTRIBUTES,
+        "Country::France, Unit::Marketing"
+    )
+    .parquet(outputURI)
+```
+
+Spark will generate Parquet partition (on `COUNTRY` and `UNIT`) which footer and all columns are encrypted using the given attributes.
 
 
+### Decryption
 
+Set the decryption key on the Hadoop Configuration of the Spark session
 
+``` java
+spark.sparkContext.hadoopConfiguration
+  .set(
+    CosmianAbeFactory.COSMIAN_DECRYPTION_KEY_ID,
+    "kmsDecryptionKeyId"
+  )
+```
 
+then simply read the Parquet partition which will be decrypted on the fly:
 
-
+``` java
+spark.read
+  .parquet(inputURI)
+  .filter((col("COUNTRY") === "FR") && (col("UNIT") !== "MKG"))
+```
