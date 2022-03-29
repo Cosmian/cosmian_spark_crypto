@@ -1,7 +1,7 @@
 
 ## Encrypting Parquet partitions with Spark and access policy attributes
 
-A [Spark](https://spark.apache.org/) add-on that enables Attribute Based Encryption in Parquet partitions using a single instruction.
+A [Spark](https://spark.apache.org/) add-on that enables Attribute Based Encryption in [Parquet](https://parquet.apache.org/) partitions using a single instruction.
 
 
 ```java
@@ -19,8 +19,6 @@ dataFrame
 
 The instruction above will encrypt the 2 dimensional partition `France x Marketing` with the access policy attributes `Country::France` and `Unit::Marketing`.
 
-For details on the underlying cryptographic protocol - attributes based encryption - check the [abe_gpsw](https://github.com/Cosmian/abe_gpsw/) and [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repositories.
-
 
 ## Why use policy attributes when encrypting Parquet partitions ?
 
@@ -32,31 +30,38 @@ For details on the underlying cryptographic protocol - attributes based encrypti
 
 4. The crypto system allows rotating policy attributes, providing forward secrecy for designated partitions.
 
-Consider the following policy axes, `Unit` and `Country` according to which data is partitioned and encrypted:
-
+Consider the following policy axes, `Unit` and `Country` according to which data is partitioned:
+each pair (Unit, Country) constitues a data partition.
 
  Unit/Country  | France |   UK   |  Spain  |  Germany  |
  --------------|--------|--------|---------|-----------|
- **Finance**   |  K₁ K₂ |   K₂   |    K₂   |    K₂     |
+ **Finance**   |  K₁    |        |         |           |
  **Marketing** |  K₁    |        |    K₃   |    K₃     |
  **Human Res.**|  K₁    |        |         |           |
- **Sales**     |  K₁    |        |    K₃   |    K₃     |
+ **Sales**     |  K₁ K₂ |   K₂   |  K₂ K₃  |   K₂ K₃   |
 
+- traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring securing both the encypting systems and decrypting systems.
+- end to end encryption will have a single key for each partition: providing access to various users over combination of paritions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be completely secure.
+- with attrbute based encryption, the encryption key is public - avoiding securing the encrypting systems - and each user can have its own unique key even when partitions overlap:
 
 Key `K₁` can decrypt all the `France` data and has the following access policy
 ``` 
 (Unit::Finance || Unit::Marketing || Unit::Human Res. || Unit::Sales ) && Country::France 
 ```
 
-Key `K₂` can decrypt all the `Finance` and has the following access policy
+Key `K₂` can decrypt all the `Sales` and has the following access policy
 ``` 
-Unit::Finance && (Country::France || Country::UK || Country::Spain || Country::Germany )
+Unit::Sales && (Country::France || Country::UK || Country::Spain || Country::Germany )
 ```
 
 Key `K₃` can decrypt the `Marketing` and `Sales` data from `Spain` and `Germany` and has the following access policy
 ``` 
 (Unit::Marketing || Unit::Sales) && (Country::Spain || Country::Germany )
 ```
+
+User key unicity is total: 2 users having access to the same partitions, have different keys providing additional security as they can be traced.
+
+For details on the underlying cryptographic protocol - attributes based encryption - check the [abe_gpsw](https://github.com/Cosmian/abe_gpsw/) and [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repositories.
 
 ## Performance
 
