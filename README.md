@@ -104,7 +104,67 @@ Using instructions available on the [cosmian_java_lib](https://github.com/Cosmia
 
  - the master public key can only be used to encrypt data, with any set of policy attributes. It can be safely deployed to any system encrypting data.
 
- - the master secret key is used to generate user decryption key with 
+ - the master secret key is used to generate user decryption key with the various access policies.
+
+### Implement the KMS access
+
+To fetch the various keys to encrypt/decrypt data, Spark must communicate with your KMS.
+Implement the interface `com.cosmian.spark` in your Spark project and pass the implementated class name to the hadoop config using 
+
+``` java
+spark.sparkContext.hadoopConfiguration.set(
+  CosmianAbeFactory.COSMIAN_KMS_CLIENT_CLASS,
+  "com.yourcompany.YourKms"
+)
+```
+
+Before retrieving any key using the `retrievePublicKey()` or `retrievePrivateKey(String privateKeyId)`, Spark will call the `initialize(Configuration configuration, String kmsInstanceID, String kmsInstanceURL, String accessToken)` method once per Spark thread.
+
+The parmeters passed to the `initialize` method are extracted from the parameters set on the Hadoop configuration of the Spark session.
+
+ - `kmsInstanceId` :
+
+    ``` java
+    spark.sparkContext.hadoopConfiguration
+      .set(
+        CosmianAbeFactory.COSMIAN_KMS_CLIENT_INSTANCE_ID,
+        "my.kms.instance.id"
+      )
+    ```
+
+- `kmsInstanceURL` :
+
+    ``` java
+    spark.sparkContext.hadoopConfiguration
+      .set(
+        CosmianAbeFactory.COSMIAN_KMS_CLIENT_INSTANCE_ID,
+        "http://kms.url/endpoint"
+      )
+    ```
+
+- `accessToken`
+
+    ``` java
+    spark.sparkContext.hadoopConfiguration
+      .set(
+        CosmianAbeFactory.COSMIAN_KMS_CLIENT_ACCESS_TOKEN,
+        "ae34bf56c..."
+      )
+    ```
+
+Finally activate the Parquet modular encyption using
+
+
+``` java
+    spark.sparkContext.hadoopConfiguration
+      .set(
+        "parquet.crypto.factory.class",
+        "com.cosmian.spark.CosmianAbeFactory"
+      )
+```
+
+
+
 
 
 
