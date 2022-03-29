@@ -69,7 +69,7 @@ Key `K₃` can decrypt the `Marketing` and `Sales` data from `Spain` and `German
 (Unit::Marketing || Unit::Sales) && (Country::Spain || Country::Germany )
 ```
 
-User keys are truly unique: 2 users having access to the same set of partitions, have different keys. This adds security as users can be individually traced.
+**User keys are truly unique**: 2 users having access to the same set of partitions, have different keys. This adds security as users can be individually traced.
 
 For details on the underlying cryptographic protocol check the [abe_gpsw](https://github.com/Cosmian/abe_gpsw/) and [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repositories.
 
