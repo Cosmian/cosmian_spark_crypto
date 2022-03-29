@@ -22,13 +22,13 @@ The instruction above will encrypt the 2 dimensional partition `France x Marketi
 
 ## Why use policy attributes when encrypting partitions ?
 
-1. Better security through partitioning: leaking a decryption key only gives access to the partition(s) this key can decrypt.
+1. **Better security** through partitioning: leaking a decryption key only gives access to the partition(s) this key can decrypt.
 
-2. Encryption is performed using a public key, which can be safely deployed to all encrypting system, as it cannot decrypt data.
+2. Encryption is performed using a public key, which can be safely deployed to all encrypting system, as it cannot decrypt data. **Encrypting systems do not need to be secured**.
 
-3. The crypto system allows, after encryption, to issue decryption keys for overlapping partitions, facilitating access management to the data.
+3. The crypto system allows, after encryption, to issue decryption user decryption keys for **overlapping partitions**, facilitating access management to the data.
 
-4. The crypto system allows rotating policy attributes, providing forward secrecy for designated partitions.
+4. The crypto system allows rotating policy attributes, providing **forward secrecy for designated partitions**.
 
 Consider the following 2 policy axes, `Unit` and `Country` according to which data is partitioned:
 
@@ -37,9 +37,9 @@ Consider the following 2 policy axes, `Unit` and `Country` according to which da
 
 Each pair (`Unit`, `Country`) constitues one of the 16 data partitions.
 
-- traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring securing both the encypting systems and decrypting systems.
-- end to end encryption will have a single key for each partition: providing access to various users over combination of paritions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be completely secure.
-- with attrbute based encryption, the encryption key is public - avoiding securing the encrypting systems - and each user can have its own unique key even when partitions overlap:
+- traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring both the encypting and decrypting systems to be secured.
+- end to end encryption will have a single key for each partition: providing access to various users over combination of paritions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be secured.
+- with attrbute based encryption, the encryption key is public - avoiding having to secure the encrypting systems - and each user can have its own unique key even though partitions overlap:
 
  Unit/Country  | France |   UK   |  Spain  |  Germany  |
  --------------|--------|--------|---------|-----------|
@@ -64,9 +64,9 @@ Key `K₃` can decrypt the `Marketing` and `Sales` data from `Spain` and `German
 (Unit::Marketing || Unit::Sales) && (Country::Spain || Country::Germany )
 ```
 
-User key unicity is total: 2 users having access to the same partitions, have different keys providing additional security as they can be traced.
+User key unicity is total: 2 users having access to the same set of partitions, have different keys. This adds security as usuers can be individually traced.
 
-For details on the underlying cryptographic protocol - attributes based encryption - check the [abe_gpsw](https://github.com/Cosmian/abe_gpsw/) and [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repositories.
+For details on the underlying cryptographic protocol check the [abe_gpsw](https://github.com/Cosmian/abe_gpsw/) and [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repositories.
 
 ## Performance
 
