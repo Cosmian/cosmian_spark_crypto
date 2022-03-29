@@ -8,8 +8,26 @@
   <version>1.0.0</version>
 
   <name>cosmian_spark_crypto</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <description>Encrypting Parquet partitions with Spark and access policy attributes</description>
+  <url>https://github.com/Cosmian/cosmian_spark_crypto</url>
+  <licenses>
+    <license>
+      <name>MIT</name>
+      <url>https://mit-license.org/</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/Cosmian/cosmian_spark_crypto</url>
+    <connection>scm:git:https://github.com/Cosmian/cosmian_spark_crypto.git</connection>
+    <developerConnection>scm:git:git@github.com:Cosmian/cosmian_spark_crypto.git</developerConnection>
+  </scm>
+  <developers>
+    <developer>
+      <name>Bruno Grieder</name>
+      <email>bruno.grieder@cosmian.com</email>
+    </developer>
+  </developers>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
