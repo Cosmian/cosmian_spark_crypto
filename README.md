@@ -26,9 +26,11 @@ The instruction above will encrypt the 2 dimensional partition `France x Marketi
 
 2. Encryption is performed using a public key, which can be safely deployed to all encrypting system, as it cannot decrypt data. **Encrypting systems do not need to be secured**.
 
-3. The crypto system allows, after encryption, to issue decryption user decryption keys for **overlapping partitions**, facilitating access management to the data.
+3. The crypto system allows user decryption keys for **overlapping set of partitions** , allowing for sophisticated, fine grained access policies.
 
-4. The crypto system allows rotating policy attributes, providing **forward secrecy for designated partitions**.
+4. User decryptions keys can be issued at any time **after** data is encrypted, for any given set of partitions, which **facilitates user key management**. 
+
+5. The crypto system allows rotating policy attributes, providing **forward secrecy for designated partitions**.
 
 Consider the following 2 policy axes, `Unit` and `Country` according to which data is partitioned:
 
@@ -38,7 +40,9 @@ Consider the following 2 policy axes, `Unit` and `Country` according to which da
 Each pair (`Unit`, `Country`) constitues one of the 16 data partitions.
 
 - traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring both the encypting and decrypting systems to be secured.
+
 - end to end encryption will have a single key for each partition: providing access to various users over combination of paritions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be secured.
+
 - with attrbute based encryption, the encryption key is public - avoiding having to secure the encrypting systems - and each user can have its own unique key even though partitions overlap:
 
  Unit/Country  | France |   UK   |  Spain  |  Germany  |
