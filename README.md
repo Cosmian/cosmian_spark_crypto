@@ -20,7 +20,7 @@ dataFrame
 The instruction above will encrypt the 2 dimensional partition `France x Marketing` with the access policy attributes `Country::France` and `Unit::Marketing`.
 
 
-## Why use policy attributes when encrypting partitions ?
+## Why you should encrypt partitions using policy attributes
 
 1. **Better security** through partitioning: leaking a decryption key only gives access to the partition(s) this key can decrypt.
 
