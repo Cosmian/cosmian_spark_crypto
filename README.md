@@ -2,7 +2,7 @@
 
 ## Encrypting Parquet partitions with Spark and access policy attributes
 
-A [Spark](https://spark.apache.org/) add-on that enables Attribute Based Encryption in [Parquet](https://parquet.apache.org/) partitions using a single instruction.
+A [Spark](https://spark.apache.org/) add-on that enables Attribute-Based Encryption in [Parquet](https://parquet.apache.org/) partitions using a single instruction.
 
 
 ```java
@@ -18,33 +18,33 @@ dataFrame
     .parquet(outputURI)
 ```
 
-The instruction above will encrypt the 2 dimensional partition `France x Marketing` with the access policy attributes `Country::France` and `Unit::Marketing`.
+The instruction above will encrypt the 2-dimensional partition `France x Marketing` with the access policy attributes `Country::France` and `Unit::Marketing`.
 
 
 ## Why you should encrypt partitions using policy attributes
 
 1. **Better security** through partitioning: leaking a decryption key only gives access to the partition(s) this key can decrypt.
 
-2. Encryption is performed using a public key, which cannot decrypt and hence can be safely deployed to all encrypting system: **Encrypting systems do not need to be secured**.
+2. Encryption is performed using a public key, which cannot decrypt and can therefore be safely deployed to all encrypting systems: **Encrypting systems do not need to be secured**.
 
-3. The crypto system allows issuing user decryption keys for **overlapping set of partitions**, allowing for sophisticated, fine grained user access policies.
+3. The cryptosystem allows issuing user decryption keys for **overlapping sets of partitions**, allowing for sophisticated, fine-grained user access policies.
 
-4. User decryptions keys can be issued at any time **after** data is encrypted, for any given set of partitions, which **facilitates user key management** and does not require exhaustively listing all possible usages prior to partitioning (a typical data science use case). 
+4. User decryptions keys can be issued at any time **after** data is encrypted, for any given set of partitions. This **facilitates user key management** and does not require exhaustively listing all possible usages before partitioning (a typical data science use case). 
 
-5. The crypto system allows rotating policy attributes, providing **forward secrecy for designated partitions** without having to re-encrypt the full database.
+5. The cryptosystem allows rotating policy attributes, providing **forward secrecy for designated partitions** without re-encrypting the entire database.
 
 Consider the following 2 policy axes, `Unit` and `Country` according to which data is partitioned:
 
 1. `Unit`: `Finance`, `Marketing`, `Human Res.`, `Sales`
 2. `Country`: `France`, `UK`, `Spain`, `Germany`
 
-Each pair (`Unit`, `Country`) constitues one of the 16 data partitions.
+Each pair (`Unit`, `Country`) constitutes one of the 16 data partitions.
 
-- traditional symmetric encryption will have a single key for all partitions: leaking this key, leaks the entire database. There effectively is a single user: users cannot be differentiated. The same key is used to encrypt and decrypt requiring both the encrypting and decrypting systems to be secured.
+- traditional symmetric encryption will have a single key for all partitions: leaking this key means leaking the entire database. There effectively is a single user: users cannot be differentiated. The same key encrypts and decrypts, requiring both the encrypting and decrypting systems to be secured.
 
-- end to end encryption will have a single key for each partition: providing access to various users over combination of partitions leads to complex key management and duplicates keys among users, which is not a good security practice. The same keys are used to encrypt and decrypt, requiring both the encrypting and decrypting systems to be secured.
+- end-to-end encryption will have a single key for each partition: providing access to various users over combinations of partitions leads to complex key management and duplicated keys among users, which is not a good security practice. The same keys encrypt and decrypt, requiring both the encrypting and decrypting systems to be secured.
 
-- with attribute based encryption, the encryption key is public - avoiding having to secure the encrypting systems - and each user can have its own unique key even though partitions overlap:
+- with attribute-based encryption, the encryption key is public - avoiding having to secure the encrypting systems - and each user can have its own unique key even though partitions overlap:
 
  Unit/Country  | France |   UK   |  Spain  |  Germany  |
  --------------|--------|--------|---------|-----------|
@@ -69,7 +69,7 @@ Key `K₃` can decrypt the `Marketing` and `Sales` data from `Spain` and `German
 (Unit::Marketing || Unit::Sales) && (Country::Spain || Country::Germany )
 ```
 
-**User keys are truly unique**: 2 users having access to the same set of partitions, have different keys. This adds security as users can be individually traced.
+**User keys are truly unique**: 2 users having access to the same set of partitions, have different keys. This adds security as users can be individually tracked.
 
 For details on the underlying cryptographic protocol check the [abe_gpsw](https://github.com/Cosmian/abe_gpsw/) and [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repositories.
 
@@ -77,7 +77,7 @@ For details on the underlying cryptographic protocol check the [abe_gpsw](https:
 
 The system is built on top of [Parquet Modular Encryption](https://github.com/apache/parquet-format/blob/master/Encryption.md) and displays the same excellent performance on Spark 3.2.
 
-Millions of records can be encrypted in a matter of seconds.
+Encryption of millions of records only takes a matter of seconds.
 
 
 ## Using
@@ -85,7 +85,7 @@ Millions of records can be encrypted in a matter of seconds.
 
 ### Setup the Spark project
 
-1. Add the two libraries to the the `sbt` dependencies
+1. Add the two libraries to the `sbt` dependencies
 
 ```scala
   libraryDependencies ++= Seq(
@@ -96,7 +96,7 @@ Millions of records can be encrypted in a matter of seconds.
   )
 ```
 
-2. Download the abe_gpsw library from the github repository or build it according to these [instructions](https://github.com/Cosmian/cosmian_java_lib#building-the-the-abe-gpsw-native-lib) and install it in the `src/main/resources/linux-x86-64` of your spark project.  
+2. Download the abe_gpsw library from the Github repository or build it according to these [instructions](https://github.com/Cosmian/cosmian_java_lib#building-the-the-abe-gpsw-native-lib) and install it in the `src/main/resources/linux-x86-64` of your spark project.  
 
 
 ### Generate the master keys
@@ -105,13 +105,13 @@ Using instructions available on the [cosmian_java_lib](https://github.com/Cosmia
 
  - the master public key can only be used to encrypt data, with any set of policy attributes. It can be safely deployed to any system encrypting data.
 
- - the master secret key is used to generate user decryption key with the various access policies.
+ - the master secret key is used to generate user decryption keys with the various access policies.
 
 ### Implement the KMS access
 
 To fetch the public and user keys to respectively encrypt and decrypt data, Spark must communicate with your KMS.
 
-Implement the interface `com.cosmian.spark` in your Spark project and pass the implementing class name to the hadoop config using 
+Implement the interface `com.cosmian.spark` in your Spark project and pass the implementing class name to the Hadoop config using 
 
 ``` java
 spark.sparkContext.hadoopConfiguration.set(
@@ -184,7 +184,7 @@ dataFrame
     .parquet(outputURI)
 ```
 
-Spark will generate Parquet partition (on `COUNTRY` and `UNIT`) which footer and all columns are encrypted using the given attributes.
+Spark will generate the Parquet partition (on `COUNTRY` and `UNIT`) in which the footer and all columns are encrypted using the given attributes.
 
 
 ### Decryption
