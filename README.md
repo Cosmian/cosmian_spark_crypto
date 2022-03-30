@@ -71,6 +71,8 @@ Key `K₃` can decrypt the `Marketing` and `Sales` data from `Spain` and `German
 
 **User keys are truly unique**: 2 users having access to the same set of partitions, have different keys. This adds security as users can be individually tracked.
 
+Lastly, **policies can be hierarchical**. Suppose you have three levels of classification: `Confidential`, `Secret`, and `Top Secret`. You can create a hierarchical policy that will let users with a `Top Secret` key decrypt `Confidential`, `Secret`, and `Top Secret` data – whereas users with a `Confidential` key will only be able to decrypt `Confidential` data.
+
 For details on the underlying cryptographic protocol check the [abe_gpsw](https://github.com/Cosmian/abe_gpsw/) and [cosmian_java_lib](https://github.com/Cosmian/cosmian_java_lib) Github repositories.
 
 ## Performance
